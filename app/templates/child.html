@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<h1> {{ childname }}</h1>
+	{% if cur_points.sum is not none %}
+		<div>Current Points: {{ cur_points.sum }}</div>
+	{% else %}
+		<div>Current Points: 0 </div>
+	{% endif %}
+	{% if target %}
+		<div>Total Points to collect: {{ target.target }}</div>
+	{% else %}
+		<div><p><a href="{{ url_for('main.set_target', username=current_user.username, childname=childname) }}">Set Target</a></p></div>
+	{% endif %}
+	{% for act in activity %}
+		<div><p><a href="{{ url_for('main.activity', username=current_user.username, childname=childname, id=act.id) }}">{{ act.activity }}</a></p></div>
+	{% endfor %}
+	<p><a href="{{ url_for('main.addactivity', username=current_user.username, childname=childname) }}">Add Activity</a></p>
+	<p><a href="{{ url_for('main.index', username=current_user.username) }}">Back</a></p>
+{% endblock %}

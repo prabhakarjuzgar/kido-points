@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<h1>{{ act.activity }}</h1>
+	<div>{{ act.activity }} <a href="{{ url_for('main.modify_activity', username=current_user.username, childname=childname, id=id) }}">{{ act.points }}</a> </div>
+
+	<p><a href="{{ url_for('main.child', username=username, childname=childname) }}">Back</a></p>
+{% endblock %}

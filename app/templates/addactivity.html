@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<h1>Add Activity</h1>
+	<form action="" method="POST">
+		{{ form.hidden_tag() }}
+		<p>
+			{{ form.activity.label }}<br>
+			{{ form.activity(size=256) }}<br>
+			{% for error in form.activity.errors %}
+				<span style="color:red;">[{{ error }}]</span>
+			{% endfor %}
+		</p>
+		<p>
+			{{ form.points.label }}<br>
+			{{ form.points() }}<br>
+			{% for error in form.points.errors %}
+				<span style="color:red;">[{{ error }}]</span>
+			{% endfor %}
+		</p>
+
+		<p>{{ form.submit() }}</p>
+	</form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<h1>AddChild</h1>
+	<form action="" method="POST">
+		{{ form.hidden_tag() }}
+		<p>
+			{{ form.childname.label }}<br>
+			{{ form.childname(size=32) }}<br>
+			{% for error in form.childname.errors %}
+			<span style="color:red;">[{{ error }}]</span>
+			{% endfor %}
+		</p>
+		<p>{{ form.submit() }}</p>
+	</form>
+{% endblock %}

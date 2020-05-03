@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+	<h1>Set Target</h1>
+	<form action="" method="POST">
+		{{ form.hidden_tag() }}
+		<p>
+			{{ form.target.label }}<br>
+			{{ form.target() }}<br>
+			{% for error in form.target.errors %}
+				<span style="color:red;">[{{ error }}]</span>
+			{% endfor %}
+		</p>
+		<p>{{ form.submit() }} </p>
+	</form>
+{% endblock %}
