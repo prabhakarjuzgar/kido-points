@@ -3,30 +3,18 @@ from flask import (render_template,
                    flash,
                    redirect,
                    url_for,
-                   request,
-                   g,
-                   jsonify,
-                   current_app,
-                   session)
-from flask_login import current_user, login_required, login_user, logout_user
-from werkzeug.urls import url_parse
+                   request)
+from flask_login import current_user, login_required
 from sqlalchemy import func
-# from app.main.forms import EditProfileForm, PostForm
 from app import db
 from app.models import User, Child, Activity, Target
-from app.main.forms import (LoginForm,
-                            RegisterationForm,
-                            RegisterationFormChild,
+from app.main.forms import (RegisterationFormChild,
                             RegisterationFormActivity,
                             SetTarget,
                             RegisterationFormActivityModify)
 from app.main import bp
 from app import logger
 
-@bp.errorhandler(405)
-def method_not_allowed():
-    import pdb; pdb.set_trace()
-    return make_response(render_template("405.html"), 400)
 
 @bp.before_app_request
 def before_app_request():
@@ -34,63 +22,26 @@ def before_app_request():
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
 
-@bp.route('/', methods=['GET', 'POST'])
-@bp.route('/index/<username>', methods=['GET', 'POST'])
+@bp.route('/', methods=['GET'])
+@bp.route('/index', methods=['GET'])
 @login_required
-def index(username: str):
-    children = Child.query.filter_by(parentid=current_user.id).all()
+def index():
+    return render_template('base.html', title='Home')
+
+@bp.route('/user/<username>', methods=['GET', 'POST'])
+@login_required
+def user(username: str):
+    user = User.query.filter_by(username=username).first_or_404()
+    children = Child.query.filter_by(parentid=user.id).all()
     logger.debug('Home page')
-    return render_template('index.html', title='Home', children=children)
-
-@bp.route('/login', methods=['GET', 'POST'])
-def login():
-    print("Login")
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index', username=current_user.username))
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user is None or not user.check_password(form.password.data):
-            flash('Invalid username or password')
-            return redirect(url_for('main.login'))
-
-        login_user(user, remember=form.remember_me.data)
-        next_page = request.args.get('next')
-        if not next_page or url_parse(next_page).netloc != '':
-            next_page = url_for('main.index', username=current_user.username)
-        return redirect(next_page)
-    return render_template('login.html', title='LogIn', form=form)
-
-@bp.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('main.login'))
-
-@bp.route('/signup', methods=['GET', 'POST'])
-def signup():
-    logger.debug('Register. Request.method %s', request.method)
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index', username=current_user.username))
-    form = RegisterationForm()
-    logger.debug('validate_on_submit - %d', form.validate_on_submit())
-    if form.validate_on_submit():
-        logger.debug('Register User POST %s', form.username.data)
-        user = User(username=form.username.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        flash('Thank you for registering')
-        return redirect(url_for('main.login'))
-
-    logger.debug('Register User GET %s', form.username.data)
-    return render_template('register.html', title='SignIn', form=form)
+    return render_template('user.html', title='Home', children=children)
 
 @bp.route('/<username>/addchild', methods=['GET', 'POST'])
 @login_required
 def addchild(username: str):
     logger.debug('AddChild. Request.method %s', request.method)
     if not current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return redirect(url_for('auth.login'))
     form = RegisterationFormChild()
     logger.debug('validate_on_submit - %d', form.validate_on_submit())
     if form.validate_on_submit():
@@ -100,7 +51,7 @@ def addchild(username: str):
         child = Child(childname=form.childname.data, parentid=user.id)
         db.session.add(child)
         db.session.commit()
-        return redirect(url_for('main.index', username=current_user.username))
+        return redirect(url_for('main.user', username=current_user.username))
     return render_template('addchild.html', title='AddChild', form=form)
 
 @bp.route('/<username>/child/<childname>', methods=['GET', 'POST'])
@@ -108,7 +59,7 @@ def addchild(username: str):
 def child(username: str, childname: str):
     logger.debug('Child. Request.method %s', request.method)
     if not current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return redirect(url_for('auth.login'))
     user = User.query.filter_by(username=current_user.username).first_or_404()
     child1 = Child.query.filter_by(childname=childname, parentid=user.id).first_or_404()
     activities = Activity.query.filter_by(childid=child1.id).all()
@@ -130,7 +81,7 @@ def child(username: str, childname: str):
 def addactivity(username: str, childname: str):
     logger.debug('AddActivity. Request.method %s', request.method)
     if not current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return redirect(url_for('auth.login'))
 
     user = User.query.filter_by(username=current_user.username).first_or_404()
     child1 = Child.query.filter_by(childname=childname, parentid=user.id).first_or_404()
@@ -151,11 +102,11 @@ def addactivity(username: str, childname: str):
                                 username=current_user.username))
     return render_template('addactivity.html', title='AddActivity', form=form)
 
-@bp.route('/<username>/<childname>/activity/<id>', methods=['GET', 'POST'])
+@bp.route('/<username>/<childname>/activity/<int:id>', methods=['GET', 'POST'])
 @login_required
 def activity(username:str, childname: str, id: int):
     if not current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return redirect(url_for('auth.login'))
 
     act = Activity.query.filter_by(id=id).first_or_404()
 
@@ -166,11 +117,11 @@ def activity(username:str, childname: str, id: int):
                            childname=childname,
                            id=id)
 
-@bp.route('/<username>/<childname>/modify-activity/<id>', methods=['GET', 'POST'])
+@bp.route('/<username>/<childname>/modify-activity/<int:id>', methods=['GET', 'POST'])
 @login_required
 def modify_activity(username:str, childname: str, id: int):
     if not current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return redirect(url_for('auth.login'))
 
     user = User.query.filter_by(username=current_user.username).first_or_404()
     child1 = Child.query.filter_by(childname=childname, parentid=user.id).first_or_404()
@@ -203,7 +154,7 @@ def modify_activity(username:str, childname: str, id: int):
 @login_required
 def set_target(username: str, childname: str):
     if not current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return redirect(url_for('auth.login'))
 
     print("RENDER TARGET.HTML qqqq")
     user = User.query.filter_by(username=current_user.username).first_or_404()

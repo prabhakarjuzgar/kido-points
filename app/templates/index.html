@@ -1,9 +1,1 @@
 {% extends "base.html" %}
-
-{% block content %}
-	<h1>Hi, {{ current_user.username }}!</h1>
-	{% for child in children %}
-	<div><p> <a href="{{ url_for('main.child', username=current_user.username, childname=child.childname) }}">{{ child.childname }}</a></p></div>
-	{% endfor %}
-	<p>Add Child? <a href="{{ url_for('main.addchild', username=current_user.username) }}">Add Child</a></p>
-{% endblock %}
